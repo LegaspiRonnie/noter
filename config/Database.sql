@@ -1,0 +1,15 @@
+CREATE TABLE noter_categories (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    description VARCHAR(255) 
+)
+
+CREATE TABLE noter_notes (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    category_id INT,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES noter_categories(id) ON DELETE SET NULL
+)

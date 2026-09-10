@@ -7,6 +7,9 @@ class Database {
     private int $port = 3306;
 
     public function connect(): mysqli {
+        // I enabled strict MySQLi error reporting so SQL failures become exceptions instead of silent runtime issues.
+        mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
         $conn = new mysqli(
             $this->hostname,
             $this->username,
