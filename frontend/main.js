@@ -1,1 +1,4 @@
-import { index } from './index.js';
+import { bindActions, index } from './api.js';
+
+bindActions();
+index();
