@@ -6,131 +6,456 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Noter</title>
     <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
+            margin: 0;
             font-family: Arial, Helvetica, sans-serif;
+            background: var(--bg);
+            color: var(--text);
         }
 
-        /* The Modal (background) */
-        .modal {
-            display: none;
-            /* Hidden by default */
-            position: fixed;
-            /* Stay in place */
-            z-index: 1;
-            /* Sit on top */
-            padding-top: 100px;
-            /* Location of the box */
-            left: 0;
-            top: 0;
-            width: 100%;
-            /* Full width */
-            height: 100%;
-            /* Full height */
-            overflow: auto;
-            /* Enable scroll if needed */
-            background-color: rgb(0, 0, 0);
-            /* Fallback color */
-            background-color: rgba(0, 0, 0, 0.4);
-            /* Black w/ opacity */
+        .app-shell {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px 40px;
         }
 
-        /* Modal Content */
-        .modal-content {
-            position: relative;
-            background-color: #fefefe;
-            margin: auto;
-            padding: 0;
-            border: 1px solid #888;
-            width: 80%;
-            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-            -webkit-animation-name: animatetop;
-            -webkit-animation-duration: 0.4s;
-            animation-name: animatetop;
-            animation-duration: 0.4s
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding: 18px 22px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
         }
 
-        /* Add Animation */
-        @-webkit-keyframes animatetop {
-            from {
-                top: -300px;
-                opacity: 0
-            }
-
-            to {
-                top: 0;
-                opacity: 1
-            }
+        .title-wrap h1 {
+            margin: 0;
+            font-size: 1.8rem;
         }
 
-        @keyframes animatetop {
-            from {
-                top: -300px;
-                opacity: 0
-            }
-
-            to {
-                top: 0;
-                opacity: 1
-            }
+        .title-wrap p {
+            margin: 4px 0 0;
+            color: var(--muted);
         }
 
-        /* The Close Button */
-        .close {
-            color: white;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
+        .btn {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s ease;
         }
 
-        .close:hover,
-        .close:focus {
-            color: #000;
-            text-decoration: none;
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover,
+        .btn-primary:focus {
+            background: var(--primary-dark);
+        }
+
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .note-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .note-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .note-id-badge,
+        .category-pill {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            padding: 6px 10px;
+        }
+
+        .note-id-badge {
+            background: #e0e7ff;
+            color: var(--primary-dark);
+        }
+
+        .category-pill {
+            background: #ecfeff;
+            color: #0f766e;
+        }
+
+        .note-card h3 {
+            margin: 0;
+            font-size: 1.15rem;
+        }
+
+        .note-card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .note-meta {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-top: auto;
+        }
+
+        .card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .card-actions button {
+            flex: 1;
+            min-width: 80px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #fff;
             cursor: pointer;
         }
 
+        .card-actions button[data-action="delete"] {
+            color: var(--danger);
+            border-color: #fecaca;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background: rgba(15, 23, 42, 0.45);
+            padding: 28px 12px;
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 560px;
+            margin: 40px auto;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            animation: slideIn 0.2s ease;
+        }
+
+        .paper-note {
+            background: #ffffff;
+            border: 1px solid rgba(120, 119, 198, 0.18);
+            border-radius: 18px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+            background-image: linear-gradient(rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+            background-size: 100% 26px;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .paper-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 20px 12px;
+            border-bottom: 1px dashed rgba(148, 163, 184, 0.6);
+        }
+
+        .paper-meta {
+            font-size: 0.8rem;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .paper-body {
+            padding: 18px 20px 20px;
+            font-family: Georgia, "Times New Roman", serif;
+            color: #2d2a26;
+        }
+
+        .paper-title {
+            margin: 0 0 16px;
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            line-height: 1.2;
+            color: #1f2937;
+            letter-spacing: 0.02em;
+        }
+
+        .paper-description {
+            margin: 0;
+            line-height: 1.9;
+            font-size: 1.02rem;
+            white-space: pre-wrap;
+            color: #312e2b;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .modal-header {
-            padding: 2px 16px;
-            background-color: #5cb85c;
-            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 20px;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.4rem;
+        }
+
+        .close {
+            color: #ef4444;
+            font-size: 28px;
+            font-weight: 700;
+            cursor: pointer;
+            line-height: 1;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.8);
         }
 
         .modal-body {
-            padding: 2px 16px;
+            padding: 20px;
         }
 
-        .modal-footer {
-            padding: 2px 16px;
-            background-color: #5cb85c;
-            color: white;
+        form {
+            display: grid;
+            gap: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            background: #fff;
+            color: var(--text);
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: 2px solid rgba(37, 99, 235, 0.15);
+            border-color: var(--primary);
+        }
+
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .description-editor-wrap {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            background: #f8fafc;
+        }
+
+        .btn-small {
+            padding: 8px 10px;
+            font-size: 0.82rem;
+        }
+
+        .color-swatch {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.1);
+            cursor: pointer;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .description-editor {
+            min-height: 140px;
+            padding: 12px;
+            outline: none;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .description-editor mark,
+        .note-card mark,
+        .paper-description mark {
+            background: #fef08a;
+            color: #111827;
+            border-radius: 4px;
+            padding: 0 2px;
+        }
+
+        .pin-badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 5px 8px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .pagination-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px;
+        }
+
+        .page-btn {
+            border: 1px solid var(--border);
+            background: #fff;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            color: var(--text);
+        }
+
+        .page-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .empty-message,
+        .error-message {
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        .error-message {
+            color: var(--danger);
+            font-style: normal;
+        }
+
+        @media (max-width: 768px) {
+            .notes-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
 
 <body>
-    <button id="addNoteBtn">Add Note</button>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Category ID</th>
-                <th>Title</th>
-                <th>Description</th>
-                <th>Created At</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="notesTableBody">
-            <tr>
-                <td>Loading Notes...</td>
-            </tr>
-        </tbody>
-    </table>
-    <!-- // Modal for displaying note details -->
-    <div id="notesDetailsModal" class="modal">
-    <!-- // Modal for displaying note details -->
-    <div id="addNoteModal" class="modal">
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="title-wrap">
+                <h1>Noter</h1>
+                <p>Simple note-taking workspace</p>
+            </div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <button type="button" class="btn" style="background:#fff; border:1px solid #e2e8f0; color:#0f172a;" data-action="add-category">Add category</button>
+                <button type="button" class="btn btn-primary" data-action="add">Add note</button>
+            </div>
+        </header>
+
+        <form id="searchForm" class="search-bar" style="display:flex; gap:12px; margin-bottom:20px; align-items:center; flex-wrap:wrap;">
+            <input type="search" id="searchInput" name="search" placeholder="Search notes or description" style="flex:1; min-width:220px;">
+            <button type="submit" class="btn btn-primary">Search</button>
+            <button type="button" id="clearSearchBtn" class="btn" style="background:#fff; border:1px solid #e2e8f0; color:#0f172a;">Clear</button>
+        </form>
+
+        <div id="notesGrid" class="notes-grid">
+            <div class="empty-message">Loading notes...</div>
+        </div>
+        <div id="paginationControls"></div>
     </div>
+
+    <div id="notesDetailsModal" class="modal"></div>
+    <div id="addNoteModal" class="modal"></div>
+    <div id="editNoteModal" class="modal"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script type="module" src="main.js"></script>
 </body>
 

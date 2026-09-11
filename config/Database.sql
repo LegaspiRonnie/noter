@@ -7,6 +7,7 @@ CREATE TABLE noter_categories (
 CREATE TABLE noter_notes (
     id INT PRIMARY KEY AUTO_INCREMENT,
     category_id INT,
+    pinned TINYINT(1) NOT NULL DEFAULT 0 AFTER category_id,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
