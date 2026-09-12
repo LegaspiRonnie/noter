@@ -88,7 +88,7 @@ class Note {
         if (!empty($where)) {
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
-        $sql .= " ORDER BY n.pinned DESC, n.created_at DESC LIMIT ? OFFSET ?";
+        $sql .= " ORDER BY c.name ASC, n.pinned DESC, n.created_at DESC LIMIT ? OFFSET ?";
 
         $stmt = $this->conn->prepare($sql);
         if ($stmt === false) {

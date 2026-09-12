@@ -1,4 +1,6 @@
-const API_URL = '../api/Note.php';
+const API_URL = (typeof window !== 'undefined' && window.APP_CONFIG && window.APP_CONFIG.API_URL)
+    ? window.APP_CONFIG.API_URL
+    : '../backend/api/Note.php';
 
 function showAlert(message, icon = 'success') {
     if (window.Swal) {
@@ -48,15 +50,6 @@ function normalizeHighlightMarkup(value = '') {
         .replace(/&amp;/gi, '&');
 
     html = html.replace(/<script[\s\S]*?<\/script>/gi, '');
-
-    let previous = '';
-    while (html !== previous) {
-        previous = html;
-        html = html.replace(/<mark\b([^>]*)>([\s\S]*?)<\/mark>\s*<mark\b([^>]*)>([\s\S]*?)<\/mark>/gi, (_, firstAttrs, firstContent, secondAttrs, secondContent) => {
-            const mergedAttrs = firstAttrs || secondAttrs || '';
-            return `<mark${mergedAttrs}>${firstContent}${secondContent}</mark>`;
-        });
-    }
 
     html = html.replace(/<\/?(script|style|iframe|object|embed|svg|math|img|video|audio|canvas|link|meta|base|form|input|button|select|textarea|option|noscript|article|aside|details|figcaption|figure|header|footer|nav|main|section)[^>]*>/gi, '');
     html = html.replace(/<(?!\/?(mark|br|strong|b|em|i|u|p|span)\b)[^>]*>/gi, '');
@@ -186,18 +179,45 @@ function normalizeResult(result) {
     return result;
 }
 
-export async function index(searchTerm = '', page = 1) {
+function renderLoadingState(message = 'Loading notes...') {
+    return `
+        <div class="loading-state" aria-live="polite">
+            <span class="loader" aria-hidden="true"></span>
+            <span>${escapeHtml(message)}</span>
+        </div>
+    `;
+}
+
+export async function index(searchTerm = '', page = 1, categoryId = '') {
     const notesGrid = document.querySelector('#notesGrid');
     const paginationContainer = document.querySelector('#paginationControls');
+    const categoryFilter = document.querySelector('#categoryFilter');
 
     try {
         const query = (searchTerm ?? '').trim();
         const currentPage = Number(page) > 0 ? Number(page) : 1;
+        const selectedCategoryId = categoryId !== undefined && categoryId !== null ? String(categoryId) : (categoryFilter ? categoryFilter.value : '');
+
+        if (notesGrid) {
+            notesGrid.innerHTML = renderLoadingState('Loading notes...');
+            if (categoryFilter) {
+                categoryFilter.disabled = true;
+            }
+        }
+
         const params = new URLSearchParams();
 
         if (query) params.set('search', query);
+        if (selectedCategoryId) params.set('category_id', selectedCategoryId);
         params.set('page', String(currentPage));
         params.set('limit', '10');
+
+        const categories = await loadCategories();
+        if (categoryFilter) {
+            const options = '<option value="">All categories</option>' + renderCategoryOptions(categories, selectedCategoryId);
+            categoryFilter.innerHTML = options;
+            categoryFilter.value = selectedCategoryId || '';
+        }
 
         const response = await fetch(`${API_URL}?${params.toString()}`, {
             method: 'GET',
@@ -224,32 +244,56 @@ export async function index(searchTerm = '', page = 1) {
             return;
         }
 
-        notesGrid.innerHTML = notes.map(note => {
-            const safeTitle = escapeHtml(note.title ?? 'Untitled');
-            const safeDescription = formatDescriptionForDisplay(note.description ?? 'No description');
-            const safeCategory = escapeHtml(note.category_name || (note.category_id ? `Category ${note.category_id}` : 'Uncategorized'));
-            const safeCreatedAt = escapeHtml(note.created_at ?? '');
-            const pinned = Number(note.pinned ?? 0) === 1;
-            const pinLabel = pinned ? 'Unpin' : 'Pin';
+        const groupedNotes = new Map();
+        for (const note of notes) {
+            const categoryName = note.category_name || (note.category_id ? `Category ${note.category_id}` : 'Uncategorized');
+            if (!groupedNotes.has(categoryName)) {
+                groupedNotes.set(categoryName, []);
+            }
+            groupedNotes.get(categoryName).push(note);
+        }
+
+        const orderedGroups = [...groupedNotes.entries()].sort(([left], [right]) => left.localeCompare(right));
+
+        notesGrid.innerHTML = orderedGroups.map(([categoryName, grouped]) => {
+            const groupCards = grouped.map(note => {
+                const safeTitle = escapeHtml(note.title ?? 'Untitled');
+                const safeDescription = formatDescriptionForDisplay(note.description ?? 'No description');
+                const safeCategory = escapeHtml(note.category_name || (note.category_id ? `Category ${note.category_id}` : 'Uncategorized'));
+                const safeCreatedAt = escapeHtml(note.created_at ?? '');
+                const pinned = Number(note.pinned ?? 0) === 1;
+                const pinLabel = pinned ? 'Unpin' : 'Pin';
+
+                return `
+                    <article class="note-card">
+                        <div class="note-header">
+                            <span class="category-pill">${safeCategory}</span>
+                            ${pinned ? '<span class="pin-badge">Pinned</span>' : ''}
+                        </div>
+                        <h3>${safeTitle}</h3>
+                        <p>${safeDescription}</p>
+                        <div class="note-meta">${safeCreatedAt}</div>
+                        <div class="card-actions">
+                            <button type="button" data-action="view" data-id="${note.id}">View</button>
+                            <button type="button" data-action="edit" data-id="${note.id}">Edit</button>
+                            <button type="button" data-action="toggle-pin" data-id="${note.id}" data-pinned="${pinned ? '1' : '0'}">${pinLabel}</button>
+                            <button type="button" data-action="delete" data-id="${note.id}">Delete</button>
+                        </div>
+                    </article>
+                `;
+            }).join('');
 
             return `
-                <article class="note-card">
-                    <div class="note-header">
-                        <span class="category-pill">${safeCategory}</span>
-                        ${pinned ? '<span class="pin-badge">Pinned</span>' : ''}
-                    </div>
-                    <h3>${safeTitle}</h3>
-                    <p>${safeDescription}</p>
-                    <div class="note-meta">${safeCreatedAt}</div>
-                    <div class="card-actions">
-                        <button type="button" data-action="view" data-id="${note.id}">View</button>
-                        <button type="button" data-action="edit" data-id="${note.id}">Edit</button>
-                        <button type="button" data-action="toggle-pin" data-id="${note.id}" data-pinned="${pinned ? '1' : '0'}">${pinLabel}</button>
-                        <button type="button" data-action="delete" data-id="${note.id}">Delete</button>
-                    </div>
-                </article>
+                <section class="category-group" data-category="${escapeHtml(categoryName)}">
+                    <h2 class="category-group-title">${escapeHtml(categoryName)}</h2>
+                    <div class="notes-grid-inner">${groupCards}</div>
+                </section>
             `;
         }).join('');
+
+        if (categoryFilter) {
+            categoryFilter.disabled = false;
+        }
 
         if (paginationContainer) {
             const totalPages = Number(pagination.total_pages || 1);
@@ -273,6 +317,9 @@ export async function index(searchTerm = '', page = 1) {
             notesGrid.innerHTML = `<div class="error-message">${escapeHtml(error.message)}</div>`;
         }
         if (paginationContainer) paginationContainer.innerHTML = '';
+        if (categoryFilter) {
+            categoryFilter.disabled = false;
+        }
         console.error(error);
     }
 }
@@ -870,8 +917,10 @@ export function bindActions() {
 
         if (page) {
             const searchInput = document.querySelector('#searchInput');
+            const categoryFilter = document.querySelector('#categoryFilter');
             const searchValue = searchInput ? searchInput.value : '';
-            await index(searchValue, Number(page));
+            const categoryValue = categoryFilter ? categoryFilter.value : '';
+            await index(searchValue, Number(page), categoryValue);
             return;
         }
 

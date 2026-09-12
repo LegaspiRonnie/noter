@@ -9,15 +9,28 @@ const clearSearchBtn = document.querySelector('#clearSearchBtn');
 if (searchForm && searchInput) {
     searchForm.addEventListener('submit', (event) => {
         event.preventDefault();
-        index(searchInput.value, 1);
+        const categoryFilter = document.querySelector('#categoryFilter');
+        index(searchInput.value, 1, categoryFilter ? categoryFilter.value : '');
     });
 }
 
 if (clearSearchBtn && searchInput) {
     clearSearchBtn.addEventListener('click', () => {
         searchInput.value = '';
-        index('', 1);
+        const categoryFilter = document.querySelector('#categoryFilter');
+        if (categoryFilter) {
+            categoryFilter.value = '';
+        }
+        index('', 1, '');
     });
 }
 
-index('', 1);
+const categoryFilter = document.querySelector('#categoryFilter');
+if (categoryFilter) {
+    categoryFilter.addEventListener('change', () => {
+        const searchInput = document.querySelector('#searchInput');
+        index(searchInput ? searchInput.value : '', 1, categoryFilter.value);
+    });
+}
+
+index('', 1, '');
