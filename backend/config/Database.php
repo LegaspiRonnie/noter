@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../../../vendor/autoload.php';
+require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
 
 use Dotenv\Dotenv;
 
@@ -11,11 +11,11 @@ class Database {
     private int $port;
 
     public function __construct() {
-        $dotenv = Dotenv::createImmutable(dirname(__DIR__, 3));
+        $dotenv = Dotenv::createImmutable(dirname(__DIR__, 2));
         $dotenv->safeLoad();
 
         $this->hostname = getenv('DB_HOST') ?: 'localhost';
-        $this->username = getenv('DB_USER') ?: 'postgres';
+        $this->username = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? $_ENV['DB_USERNAME'] ?? 'postgres');
         $this->password = getenv('DB_PASSWORD') ?: 'Ronnie@23';
         $this->dbname = getenv('DB_NAME') ?: 'ronnie_legaspi';
         $this->port = (int) (getenv('DB_PORT') ?: 5432);
@@ -38,10 +38,12 @@ class Database {
             $this->dbname
         );
 
-        return new PDO($dsn, $this->username, $this->password, [
+        $pdo = new PDO($dsn, $this->username, $this->password, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
         ]);
+
+        return $pdo;
     }
 }
